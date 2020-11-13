@@ -60,12 +60,12 @@ SCALE = 6.0  # Track scale
 TRACK_RAD = 900 / SCALE  # Track is heavily morphed circle with this radius
 PLAYFIELD = 2000 / SCALE  # Game over boundary
 FPS = 50  # Frames per second
-ZOOM = 2.7  # Camera zoom
+ZOOM = 1  # Camera zoom
 ZOOM_FOLLOW = True  # Set to False for fixed view (don't use zoom)
 
 
-TRACK_DETAIL_STEP = 21 / SCALE
-TRACK_TURN_RATE = 0.31
+TRACK_DETAIL_STEP = 40 / SCALE
+TRACK_TURN_RATE = .1 # how thicc the turn loops are
 TRACK_WIDTH = 40 / SCALE
 BORDER = 8 / SCALE
 BORDER_MIN_COUNT = 4
@@ -157,23 +157,30 @@ class CarRacing(gym.Env, EzPickle):
         self.car.destroy()
 
     def _create_track(self):
-        CHECKPOINTS = 12
+        CHECKPOINTS = 4
 
         # Create checkpoints
         checkpoints = []
-        for c in range(CHECKPOINTS):
-            noise = self.np_random.uniform(0, 2 * math.pi * 1 / CHECKPOINTS)
-            alpha = 2 * math.pi * c / CHECKPOINTS + noise
-            rad = self.np_random.uniform(TRACK_RAD / 3, TRACK_RAD)
+        for c in range(0, CHECKPOINTS):
+            # # noise = self.np_random.uniform(0, 2 * math.pi * 1 / CHECKPOINTS)
+            # noise = 0 # makes for straight lines
+            # alpha = 2 * math.pi * c / CHECKPOINTS + noise # somehow affects the position of the checkpoints
+            # rad = self.np_random.uniform(TRACK_RAD / 3, TRACK_RAD) # somehow affects the distance between checkpoints
 
-            if c == 0:
-                alpha = 0
-                rad = 1.5 * TRACK_RAD
+            # if c == 0:
+            #     alpha = 0
+            #     rad = 1.5 * TRACK_RAD
+            # if c == CHECKPOINTS - 1:
+            #     alpha = 2 * math.pi * c / CHECKPOINTS
+            #     self.start_alpha = 2 * math.pi * (-0.5) / CHECKPOINTS
+            #     rad = 1.5 * TRACK_RAD
+            alpha = (1 + 2*(c - 1)) * math.pi / CHECKPOINTS
+            rad = TRACK_RAD
+
             if c == CHECKPOINTS - 1:
-                alpha = 2 * math.pi * c / CHECKPOINTS
-                self.start_alpha = 2 * math.pi * (-0.5) / CHECKPOINTS
-                rad = 1.5 * TRACK_RAD
+                self.start_alpha = 0
 
+            # print("Alpha: {} cos: {} sin: {}".format(alpha, rad * math.cos(alpha), rad * math.sin(alpha)))
             checkpoints.append((alpha, rad * math.cos(alpha), rad * math.sin(alpha)))
         self.road = []
 

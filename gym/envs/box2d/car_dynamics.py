@@ -16,6 +16,10 @@ SIZE = 0.02
 ENGINE_POWER = 100000000*SIZE*SIZE
 WHEEL_MOMENT_OF_INERTIA = 4000*SIZE*SIZE
 FRICTION_LIMIT = 1000000*SIZE*SIZE     # friction ~= mass ~= size^2 (calculated implicitly using density)
+WHEEL_FRICTION_COEFF = 1 # can be in range of [0.5-1.5]
+WHEEL_FRICTION_LIMIT = FRICTION_LIMIT*WHEEL_FRICTION_COEFF
+WHEEL_WEAR_COEFF = 0.001 # can be in range of (0-10] (can be higher but that gives wonky results)
+WHEEL_K = WHEEL_WEAR_COEFF*5000 - 1 # number should 5*track length
 WHEEL_R = 27
 WHEEL_W = 14
 WHEELPOS = [
@@ -99,7 +103,7 @@ class Car:
                 enableLimit=True,
                 maxMotorTorque=180*900*SIZE*SIZE,
                 motorSpeed=0,
-                lowerAngle=-0.4,
+                lowerAngle=-0.4, # wheel rotation angles?
                 upperAngle=+0.4,
                 )
             w.joint = self.world.CreateJoint(rjd)
@@ -108,6 +112,9 @@ class Car:
             self.wheels.append(w)
         self.drawlist = self.wheels + [self.hull]
         self.particles = []
+
+        self.totalDistance = 0
+        self.tireWear = 0
 
     def gas(self, gas):
         """control: rear wheel drive
@@ -118,7 +125,7 @@ class Car:
         gas = np.clip(gas, 0, 1)
         for w in self.wheels[2:4]:
             diff = gas - w.gas
-            if diff > 0.1: diff = 0.1  # gradually increase, but stop immediately
+            if diff > 0.1: diff = 0.1  # gradually increase, but stop immediately (replace with acceleration curve)
             w.gas += diff
 
     def brake(self, b):
@@ -138,6 +145,10 @@ class Car:
         self.wheels[1].steer = s
 
     def step(self, dt):
+        topthing = WHEEL_WEAR_COEFF * self.totalDistance - WHEEL_K
+        botthing = 1 + abs(WHEEL_WEAR_COEFF * self.totalDistance - (WHEEL_K + 1))
+        self.tireWear = 1 - (.5 * (topthing/botthing + 1))
+
         for w in self.wheels:
             # Steer each wheel
             dir = np.sign(w.steer - w.joint.angle)
@@ -146,9 +157,9 @@ class Car:
 
             # Position => friction_limit
             grass = True
-            friction_limit = FRICTION_LIMIT*0.6  # Grass friction if no tile
+            friction_limit = FRICTION_LIMIT*0.6*self.tireWear  # Grass friction if no tile
             for tile in w.tiles:
-                friction_limit = max(friction_limit, FRICTION_LIMIT*tile.road_friction)
+                friction_limit = max(friction_limit, FRICTION_LIMIT*tile.road_friction) * self.tireWear
                 grass = False
 
             # Force
@@ -189,6 +200,7 @@ class Car:
             force = np.sqrt(np.square(f_force) + np.square(p_force))
 
             # Skid trace
+            print(force)
             if abs(force) > 2.0*friction_limit:
                 if w.skid_particle and w.skid_particle.grass == grass and len(w.skid_particle.poly) < 30:
                     w.skid_particle.poly.append( (w.position[0], w.position[1]) )
@@ -213,6 +225,12 @@ class Car:
             w.ApplyForceToCenter( (
                 p_force*side[0] + f_force*forw[0],
                 p_force*side[1] + f_force*forw[1]), True )
+
+            magnitude = math.sqrt(w.linearVelocity.x**2 + w.linearVelocity.y**2)
+            self.totalDistance += dt * magnitude / 4
+
+        print("Tire Wear: {}".format(self.tireWear))
+        # print("Total Distance: {}".format(self.totalDistance))
 
     def draw(self, viewer, draw_particles=True):
         if draw_particles:
