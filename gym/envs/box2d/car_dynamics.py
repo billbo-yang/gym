@@ -16,10 +16,9 @@ SIZE = 0.02
 ENGINE_POWER = 100000000*SIZE*SIZE
 WHEEL_MOMENT_OF_INERTIA = 4000*SIZE*SIZE
 FRICTION_LIMIT = 1000000*SIZE*SIZE     # friction ~= mass ~= size^2 (calculated implicitly using density)
-WHEEL_FRICTION_COEFF = 1 # can be in range of [0.5-1.5]
-WHEEL_FRICTION_LIMIT = FRICTION_LIMIT*WHEEL_FRICTION_COEFF
 WHEEL_WEAR_COEFF = 0.001 # can be in range of (0-10] (can be higher but that gives wonky results)
 WHEEL_K = WHEEL_WEAR_COEFF*5000 - 1 # number should 5*track length
+WHEEL_BASE_FRICTION = 1
 WHEEL_R = 27
 WHEEL_W = 14
 WHEELPOS = [
@@ -157,9 +156,9 @@ class Car:
 
             # Position => friction_limit
             grass = True
-            friction_limit = FRICTION_LIMIT*0.6*self.tireWear  # Grass friction if no tile
+            friction_limit = FRICTION_LIMIT*0.6*self.tireWear * WHEEL_BASE_FRICTION  # Grass friction if no tile
             for tile in w.tiles:
-                friction_limit = max(friction_limit, FRICTION_LIMIT*tile.road_friction) * self.tireWear
+                friction_limit = max(friction_limit, FRICTION_LIMIT*tile.road_friction) * self.tireWear * WHEEL_BASE_FRICTION
                 grass = False
 
             # Force
