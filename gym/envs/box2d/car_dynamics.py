@@ -50,6 +50,8 @@ HULL_POLY4 = [
 WHEEL_COLOR = (0.0,  0.0, 0.0)
 WHEEL_WHITE = (0.3, 0.3, 0.3)
 MUD_COLOR = (0.4, 0.4, 0.0)
+MAXSPEED = 100
+MAXACEL = 1
 
 
 class Car:
@@ -144,6 +146,17 @@ class Car:
         self.wheels[1].steer = s
 
     def step(self, dt):
+
+        def acel(gas, rad_of_wheel, v, dt):
+            current_vel = math.sqrt(v.x**2 + v.y**2)
+            scaledVelocity = current_vel*10/MAXSPEED
+            k = (10**(-5))
+            acel_coef = 1/(k*scaledVelocity**7+1)
+            currentAcc = gas*MAXACEL*acel_coef
+            current_vel = current_vel + currentAcc*dt 
+            omega = current_vel/rad_of_wheel
+            return (omega)
+
         topthing = WHEEL_WEAR_COEFF * self.totalDistance - WHEEL_K
         botthing = 1 + abs(WHEEL_WEAR_COEFF * self.totalDistance - (WHEEL_K + 1))
         self.tireWear = 1 - (.5 * (topthing/botthing + 1))
@@ -173,7 +186,8 @@ class Car:
             # domega = dt*W/WHEEL_MOMENT_OF_INERTIA/w.omega
 
             # add small coef not to divide by zero
-            w.omega += dt*ENGINE_POWER*w.gas/WHEEL_MOMENT_OF_INERTIA/(abs(w.omega)+5.0)
+            # w.omega += dt*ENGINE_POWER*w.gas/WHEEL_MOMENT_OF_INERTIA/(abs(w.omega)+5.0)
+            w.omega = acel(w.gas, w.wheel_rad, v, dt)
             self.fuel_spent += dt*ENGINE_POWER*w.gas
 
             if w.brake >= 0.9:
