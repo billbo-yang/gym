@@ -51,7 +51,8 @@ WHEEL_COLOR = (0.0,  0.0, 0.0)
 WHEEL_WHITE = (0.3, 0.3, 0.3)
 MUD_COLOR = (0.4, 0.4, 0.0)
 MAXSPEED = 100
-MAXACEL = 1
+MAXACEL = 40
+MAXDECEL = 50
 
 
 class Car:
@@ -156,6 +157,19 @@ class Car:
             current_vel = current_vel + currentAcc*dt 
             omega = current_vel/rad_of_wheel
             return (omega)
+        
+        def decel(brake, rad_of_wheel, v, dt):
+            current_vel = math.sqrt(v.x**2 + v.y**2)
+            scaledVelocity = current_vel*27/MAXSPEED
+            a = -0.0000336765 # or -33.6765*10^-6
+            b = 0.00183713
+            c = -0.0365703
+            d = 0.313523
+            decel_coef = a*scaledVelocity**4 + b*scaledVelocity**3 + c*scaledVelocity**2 + d*scaledVelocity
+            currentDecel = brake*MAXDECEL*decel_coef
+            current_vel = current_vel - currentDecel*dt
+            omega = current_vel/rad_of_wheel
+            return (omega)
 
         topthing = WHEEL_WEAR_COEFF * self.totalDistance - WHEEL_K
         botthing = 1 + abs(WHEEL_WEAR_COEFF * self.totalDistance - (WHEEL_K + 1))
@@ -173,6 +187,9 @@ class Car:
             for tile in w.tiles:
                 friction_limit = max(friction_limit, FRICTION_LIMIT*tile.road_friction) * self.tireWear * WHEEL_BASE_FRICTION
                 grass = False
+            
+            friction_limit = max(friction_limit, 20)
+            # print("Friction Limit: {}".format(friction_limit))
 
             # Force
             forw = w.GetWorldVector( (0,1) )
@@ -193,11 +210,7 @@ class Car:
             if w.brake >= 0.9:
                 w.omega = 0
             elif w.brake > 0:
-                BRAKE_FORCE = 15    # radians per second
-                dir = -np.sign(w.omega)
-                val = BRAKE_FORCE*w.brake
-                if abs(val) > abs(w.omega): val = abs(w.omega)  # low speed => same as = 0
-                w.omega += dir*val
+                w.omega = decel(w.brake, w.wheel_rad, v, dt)
             w.phase += w.omega*dt
 
             vr = w.omega*w.wheel_rad  # rotating wheel speed
@@ -213,7 +226,7 @@ class Car:
             force = np.sqrt(np.square(f_force) + np.square(p_force))
 
             # Skid trace
-            print(force)
+            # print(force)
             if abs(force) > 2.0*friction_limit:
                 if w.skid_particle and w.skid_particle.grass == grass and len(w.skid_particle.poly) < 30:
                     w.skid_particle.poly.append( (w.position[0], w.position[1]) )
@@ -242,7 +255,7 @@ class Car:
             magnitude = math.sqrt(w.linearVelocity.x**2 + w.linearVelocity.y**2)
             self.totalDistance += dt * magnitude / 4
 
-        print("Tire Wear: {}".format(self.tireWear))
+        # print("Tire Wear: {}".format(self.tireWear))
         # print("Total Distance: {}".format(self.totalDistance))
 
     def draw(self, viewer, draw_particles=True):
