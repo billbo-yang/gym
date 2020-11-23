@@ -170,7 +170,27 @@ class Car:
             current_vel = current_vel - currentDecel*dt
             omega = current_vel/rad_of_wheel
             return (omega)
-
+        tire = 1 #(Harder)--> C1,C2,C3,C4,C5 <--(Softest)
+        if tire == 1:
+            WHEEL_WEAR_COEFF = 0.0004 # Depending the speed should last about 2 laps
+            WHEEL_K= WHEEL_WEAR_COEFF * 1 # Starts degrading from the get go
+            FRICTION_LIMIT = 1000000*SIZE*SIZE
+        elif tire == 2:
+            WHEEL_WEAR_COEFF = 0.0006 # Lasts ~1.75 Laps
+            WHEEL_K = WHEEL_WEAR_COEFF * 1
+            FRICTION_LIMIT = 1200000 * SIZE * SIZE
+        elif tire == 3:
+            WHEEL_WEAR_COEFF = 0.0007 # Lasts ~1.5 Laps
+            WHEEL_K = WHEEL_WEAR_COEFF * 1
+            FRICTION_LIMIT = 1400000 * SIZE * SIZE
+        elif tire == 4:
+            WHEEL_WEAR_COEFF = 0.0009 # Lasts 1 Laps
+            WHEEL_K = WHEEL_WEAR_COEFF * 1  # Improves the amount of friction that is remaining
+            FRICTION_LIMIT = 1600000 * SIZE * SIZE
+        else:
+            WHEEL_WEAR_COEFF = 0.0010 # Barely completes 1 lap
+            WHEEL_K = WHEEL_WEAR_COEFF * 1
+            FRICTION_LIMIT = 1800000 * SIZE * SIZE
         topthing = WHEEL_WEAR_COEFF * self.totalDistance - WHEEL_K
         botthing = 1 + abs(WHEEL_WEAR_COEFF * self.totalDistance - (WHEEL_K + 1))
         self.tireWear = 1 - (.5 * (topthing/botthing + 1))
