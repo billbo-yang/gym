@@ -174,9 +174,8 @@ class CarRacing(gym.Env, EzPickle):
             #     alpha = 2 * math.pi * c / CHECKPOINTS
             #     self.start_alpha = 2 * math.pi * (-0.5) / CHECKPOINTS
             #     rad = 1.5 * TRACK_RAD
-            alpha = (1 + 2*(c - 1)) * math.pi / CHECKPOINTS
-            rad = TRACK_RAD
-
+            alpha = (1 + 2*(c - 1)) * math.pi / CHECKPOINTS #alpha is radian of checkpoint
+            rad = TRACK_RAD #rad is radius of checkpoint
             if c == CHECKPOINTS - 1:
                 self.start_alpha = 0
 
